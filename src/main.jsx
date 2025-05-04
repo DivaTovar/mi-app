@@ -1,13 +1,17 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
 import App from "./App";
-import "./assets/styles/index.css";
+import { ClerkProvider } from "@clerk/clerk-react";
+import { BrowserRouter } from "react-router-dom";
+import './assets/styles/index.css';
+
+
+const PUBLISHABLE_KEY = "pk_test_d2lubmluZy1zcXVpZC03My5jbGVyay5hY2NvdW50cy5kZXYk"; 
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
+  <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
     <BrowserRouter>
       <App />
     </BrowserRouter>
-  </React.StrictMode>
+  </ClerkProvider>
 );
