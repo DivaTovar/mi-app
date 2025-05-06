@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { consultarOntologia } from "../utils/sparqlClient";
 
 function Vuelos() {
   const [tipoViaje, setTipoViaje] = useState("idaVuelta");
@@ -7,6 +8,28 @@ function Vuelos() {
   const [fechaIda, setFechaIda] = useState("");
   const [fechaVuelta, setFechaVuelta] = useState("");
   const [pasajeros, setPasajeros] = useState(1);
+  const [vuelos, setVuelos] = useState([]);
+
+  useEffect(() => {
+    const obtenerVuelos = async () => {
+      try {
+        const resultados = await consultarOntologia(`
+          PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+          PREFIX : <http://www.semanticweb.org/aeropuerto#>
+          SELECT ?vuelo ?destino ?origen WHERE {
+            ?vuelo rdf:type :Vuelo .
+            OPTIONAL { ?vuelo :tieneDestino ?destino }
+            OPTIONAL { ?vuelo :tieneOrigen ?origen }
+          } LIMIT 10
+        `);
+        setVuelos(resultados.results.bindings);
+        console.log("✅ Vuelos cargados:", resultados.results.bindings);
+      } catch (error) {
+        console.error("❌ Error al cargar vuelos:", error);
+      }
+    };
+    obtenerVuelos();
+  }, []);
 
   return (
     <div className="min-h-screen bg-blue-50 font-sans">
@@ -114,6 +137,20 @@ function Vuelos() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Resultados de vuelos */}
+      <section className="max-w-6xl mx-auto mt-10 px-4">
+        <h2 className="text-xl font-bold text-blue-700 mb-4">Vuelos encontrados</h2>
+        <ul className="bg-white rounded shadow p-4 space-y-2">
+          {vuelos.map((vuelo, index) => (
+            <li key={index} className="text-sm text-gray-700">
+              <span className="font-semibold">Vuelo:</span> {vuelo.vuelo.value} <br />
+              {vuelo.origen && <><span className="font-semibold">Origen:</span> {vuelo.origen.value}<br /></>}
+              {vuelo.destino && <><span className="font-semibold">Destino:</span> {vuelo.destino.value}<br /></>}
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* Promociones */}
