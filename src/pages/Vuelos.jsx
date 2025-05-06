@@ -16,11 +16,18 @@ function Vuelos() {
         const resultados = await consultarOntologia(`
           PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
           PREFIX : <http://www.semanticweb.org/aeropuerto#>
-          SELECT ?vuelo ?destino ?origen WHERE {
+          SELECT ?vuelo ?numeroVuelo ?nombreOrigen ?nombreDestino WHERE {
             ?vuelo rdf:type :Vuelo .
-            OPTIONAL { ?vuelo :tieneDestino ?destino }
-            OPTIONAL { ?vuelo :tieneOrigen ?origen }
-          } LIMIT 10
+            OPTIONAL { ?vuelo :numeroVuelo ?numeroVuelo . }
+            OPTIONAL {
+              ?vuelo :tieneOrigen ?origen .
+              ?origen :nombreAeropuerto ?nombreOrigen .
+            }
+            OPTIONAL {
+              ?vuelo :tieneDestino ?destino .
+              ?destino :nombreAeropuerto ?nombreDestino .
+            }
+          } LIMIT 12
         `);
         setVuelos(resultados.results.bindings);
         console.log("✅ Vuelos cargados:", resultados.results.bindings);
@@ -52,18 +59,11 @@ function Vuelos() {
         <div className="max-w-6xl mx-auto">
           {/* Botones tipo de viaje */}
           <div className="flex gap-4 justify-start mb-6">
-            {[
-              { key: "idaVuelta", label: "Ida y vuelta" },
-              { key: "soloIda", label: "Solo ida" }
-            ].map(({ key, label }) => (
+            {[{ key: "idaVuelta", label: "Ida y vuelta" }, { key: "soloIda", label: "Solo ida" }].map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => setTipoViaje(key)}
-                className={`px-4 py-2 rounded-full border ${
-                  tipoViaje === key
-                    ? "bg-white text-blue-700 font-semibold"
-                    : "bg-blue-700 border-white text-white"
-                }`}
+                className={`px-4 py-2 rounded-full border ${tipoViaje === key ? "bg-white text-blue-700 font-semibold" : "bg-blue-700 border-white text-white"}`}
               >
                 {label}
               </button>
@@ -109,11 +109,7 @@ function Vuelos() {
                   value={fechaVuelta}
                   onChange={(e) => setFechaVuelta(e.target.value)}
                   disabled={tipoViaje !== "idaVuelta"}
-                  className={`w-full px-4 py-2 border rounded focus:outline-none ${
-                    tipoViaje === "idaVuelta"
-                      ? "focus:ring-2 focus:ring-blue-400"
-                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  }`}
+                  className={`w-full px-4 py-2 border rounded focus:outline-none ${tipoViaje === "idaVuelta" ? "focus:ring-2 focus:ring-blue-400" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
                 />
               </div>
               <div>
@@ -129,51 +125,44 @@ function Vuelos() {
                 </select>
               </div>
             </div>
-
             <div className="mt-6 text-center">
-              <button className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3 rounded shadow-md">
-                Buscar
-              </button>
+              <button className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3 rounded shadow-md">Buscar</button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Resultados de vuelos */}
-      <section className="max-w-6xl mx-auto mt-10 px-4">
-        <h2 className="text-xl font-bold text-blue-700 mb-4">Vuelos encontrados</h2>
-        <ul className="bg-white rounded shadow p-4 space-y-2">
-          {vuelos.map((vuelo, index) => (
-            <li key={index} className="text-sm text-gray-700">
-              <span className="font-semibold">Vuelo:</span> {vuelo.vuelo.value} <br />
-              {vuelo.origen && <><span className="font-semibold">Origen:</span> {vuelo.origen.value}<br /></>}
-              {vuelo.destino && <><span className="font-semibold">Destino:</span> {vuelo.destino.value}<br /></>}
-            </li>
+      {/* Tarjetas de vuelos */}
+      <section className="max-w-6xl mx-auto px-4 py-12">
+        <h2 className="text-2xl font-bold text-blue-700 mb-6">Vuelos encontrados</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {vuelos.map((v, index) => (
+            <div key={index} className="bg-white rounded-xl shadow-md p-5 hover:shadow-lg transition">
+              <h3 className="text-sm text-gray-500 font-semibold mb-2">NÚMERO DE VUELO</h3>
+              <p className="text-lg font-bold text-blue-600 mb-1">{v.numeroVuelo?.value || "-"}</p>
+              <p className="text-sm text-gray-700">Partiendo desde: <span className="font-medium">{v.nombreOrigen?.value || "-"}</span></p>
+              <p className="text-sm text-gray-700 mb-4">Destino: <span className="font-medium">{v.nombreDestino?.value || "-"}</span></p>
+              <button className="text-white bg-blue-500 hover:bg-blue-600 text-sm px-4 py-2 rounded shadow">Ida y vuelta</button>
+            </div>
           ))}
-        </ul>
+        </div>
       </section>
 
       {/* Promociones */}
       <section className="max-w-6xl mx-auto py-16 px-4 grid md:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
           <h3 className="font-bold text-blue-600 text-lg mb-2">🌍 Vuelos internacionales</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Hasta $300.000 COP de descuento en vuelos al exterior.
-          </p>
+          <p className="text-sm text-gray-600 mb-4">Hasta $300.000 COP de descuento en vuelos al exterior.</p>
           <button className="text-blue-600 hover:underline font-medium text-sm">Ver más ofertas</button>
         </div>
         <div className="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
           <h3 className="font-bold text-blue-600 text-lg mb-2">🏖️ Paquetes al Caribe</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Hoteles y vuelos con hasta 40% de descuento.
-          </p>
+          <p className="text-sm text-gray-600 mb-4">Hoteles y vuelos con hasta 40% de descuento.</p>
           <button className="text-blue-600 hover:underline font-medium text-sm">Explorar paquetes</button>
         </div>
         <div className="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
           <h3 className="font-bold text-blue-600 text-lg mb-2">✈️ Vuelos nacionales</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Reserva vuelos a cualquier ciudad de Colombia.
-          </p>
+          <p className="text-sm text-gray-600 mb-4">Reserva vuelos a cualquier ciudad de Colombia.</p>
           <button className="text-blue-600 hover:underline font-medium text-sm">Ver destinos</button>
         </div>
       </section>
