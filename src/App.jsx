@@ -7,6 +7,8 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import Vuelos from "./pages/Vuelos";
+import Administrador from "./pages/Administrador"; 
+import AuthRedirect from "./pages/AuthRedirect"; // ✅ Redirección post login
 
 const SUPABASE_URL = "https://mafrqpqovtomckdevjpf.supabase.co/rest/v1/usuarios";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hZnJxcHFvdnRvbWNrZGV2anBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNzU5MDEsImV4cCI6MjA2MTk1MTkwMX0.SE8h778-KCbUGZw3fkyV7a8wYcsWTx-sMyBamajg4Cs";
@@ -17,8 +19,8 @@ function App() {
   useEffect(() => {
     if (isSignedIn && user) {
       axios
-        .post(
-          SUPABASE_URL,
+        .put(
+          `${SUPABASE_URL}?id=eq.${user.id}`, // filtro por ID
           {
             id: user.id,
             nombre: user.fullName,
@@ -29,14 +31,15 @@ function App() {
               apikey: SUPABASE_ANON_KEY,
               Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
               "Content-Type": "application/json",
-              Prefer: "return=minimal",
+              Prefer: "return=representation",
             },
           }
         )
-        .then(() => console.log("✅ Usuario registrado en Supabase"))
+        .then(() => console.log("✅ Usuario registrado o actualizado en Supabase"))
         .catch((err) =>
-          console.error("❌ Error al registrar usuario en Supabase:", err)
+          console.error("❌ Error al registrar o actualizar en Supabase:", err)
         );
+
     }
   }, [isSignedIn, user]);
 
@@ -46,6 +49,8 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<SignupPage />} />
       <Route path="/vuelos" element={<Vuelos />} />
+      <Route path="/admin" element={<Administrador />} />
+      <Route path="/redirect" element={<AuthRedirect />} /> {/* 🔁 Redirección para usuarios */}
     </Routes>
   );
 }
