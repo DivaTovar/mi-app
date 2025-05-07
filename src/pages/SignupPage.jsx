@@ -1,11 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { SignUpButton } from "@clerk/clerk-react";
+import { SignUpButton, useUser } from "@clerk/clerk-react"; // 👈 se agregó useUser
 
 function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+
+  const { isSignedIn } = useUser(); // 👈 detectar sesión activa
+
+  useEffect(() => {
+    if (isSignedIn) {
+      navigate("/");
+    }
+  }, [isSignedIn, navigate]);
 
   const handleSignup = (e) => {
     e.preventDefault();

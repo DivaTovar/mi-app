@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import axios from "axios";
 
@@ -8,19 +8,20 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import Vuelos from "./pages/Vuelos";
 import Administrador from "./pages/Administrador"; 
-import AuthRedirect from "./pages/AuthRedirect"; // ✅ Redirección post login
+import AuthRedirect from "./pages/AuthRedirect";
 
 const SUPABASE_URL = "https://mafrqpqovtomckdevjpf.supabase.co/rest/v1/usuarios";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hZnJxcHFvdnRvbWNrZGV2anBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNzU5MDEsImV4cCI6MjA2MTk1MTkwMX0.SE8h778-KCbUGZw3fkyV7a8wYcsWTx-sMyBamajg4Cs";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // recortado por privacidad
 
 function App() {
-  const { user, isSignedIn } = useUser();
+  const { user, isSignedIn, isLoaded } = useUser();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if (isSignedIn && user) {
+    if (isLoaded && isSignedIn && user?.primaryEmailAddress) {
       axios
         .put(
-          `${SUPABASE_URL}?id=eq.${user.id}`, // filtro por ID
+          `${SUPABASE_URL}?id=eq.${user.id}`,
           {
             id: user.id,
             nombre: user.fullName,
@@ -40,8 +41,12 @@ function App() {
           console.error("❌ Error al registrar o actualizar en Supabase:", err)
         );
 
+      // Redirección automática a /admin si es admin
+      if (user?.publicMetadata?.role === "admin") {
+        navigate("/admin");
+      }
     }
-  }, [isSignedIn, user]);
+  }, [isLoaded, isSignedIn, user, navigate]);
 
   return (
     <Routes>
@@ -50,7 +55,7 @@ function App() {
       <Route path="/register" element={<SignupPage />} />
       <Route path="/vuelos" element={<Vuelos />} />
       <Route path="/admin" element={<Administrador />} />
-      <Route path="/redirect" element={<AuthRedirect />} /> {/* 🔁 Redirección para usuarios */}
+      <Route path="/redirect" element={<AuthRedirect />} />
     </Routes>
   );
 }

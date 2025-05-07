@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useSignIn, SignInButton } from "@clerk/clerk-react";
+import { useSignIn, SignInButton, useUser } from "@clerk/clerk-react"; // 👈 añadimos useUser
 
 function LoginPage() {
   const [email, setEmail] = useState("");
@@ -10,6 +10,14 @@ function LoginPage() {
   const navigate = useNavigate();
 
   const { signIn, isLoaded } = useSignIn();
+  const { isSignedIn } = useUser(); // 👈 obtenemos estado de sesión
+
+  // 👇 Redirige si ya hay sesión activa
+  useEffect(() => {
+    if (isSignedIn) {
+      navigate("/");
+    }
+  }, [isSignedIn, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();

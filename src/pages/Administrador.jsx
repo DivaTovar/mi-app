@@ -1,16 +1,15 @@
-import { useUser } from "@clerk/clerk-react";
+import { useUser, SignOutButton } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
 const SUPABASE_URL = "https://mafrqpqovtomckdevjpf.supabase.co/rest/v1/usuarios";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // recortado por privacidad
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // tu clave real
 
 function Administrador() {
   const { user, isSignedIn, isLoaded } = useUser();
   const [esAdmin, setEsAdmin] = useState(false);
   const [usuarios, setUsuarios] = useState([]);
 
-  // Campos del vuelo
   const [nuevoVuelo, setNuevoVuelo] = useState({
     numeroVuelo: "",
     origen: "",
@@ -24,27 +23,28 @@ function Administrador() {
 
   const handleAgregarVuelo = () => {
     console.log("✈️ Agregando vuelo:", nuevoVuelo);
-    // Aquí iría la llamada a backend o SPARQL para guardar el vuelo
     alert(`Vuelo agregado:\n${JSON.stringify(nuevoVuelo, null, 2)}`);
     setNuevoVuelo({ numeroVuelo: "", origen: "", destino: "", fecha: "" });
   };
 
   useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      const rol = user?.publicMetadata?.role;
-      if (rol === "admin") {
-        setEsAdmin(true);
-
-        axios
-          .get(SUPABASE_URL, {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          })
-          .then((res) => setUsuarios(res.data))
-          .catch((err) => console.error("❌ Error al obtener usuarios", err));
-      }
+    if (isLoaded && isSignedIn && user) {
+      user.reload().then(() => {
+        const rol = user.publicMetadata?.role;
+        console.log("🔄 Metadata actualizada:", rol);
+        if (rol === "admin") {
+          setEsAdmin(true);
+          axios
+            .get(SUPABASE_URL, {
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+              },
+            })
+            .then((res) => setUsuarios(res.data))
+            .catch((err) => console.error("❌ Error al obtener usuarios", err));
+        }
+      });
     }
   }, [isLoaded, isSignedIn, user]);
 
@@ -53,13 +53,28 @@ function Administrador() {
   }
 
   if (!esAdmin) {
-    return <div className="p-6 text-center text-red-500 font-semibold">🚫 No tienes permisos de administrador.</div>;
+    return (
+      <div className="p-6 text-center text-red-500 font-semibold">
+        🚫 No tienes permisos de administrador.
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-3xl font-bold text-blue-800 mb-2">Panel de Administrador</h1>
-      <p className="text-gray-600 mb-6">👤 Sesión iniciada como: <strong>{user.fullName} (Administrador)</strong></p>
+      {/* Encabezado */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-blue-800">Panel de Administrador</h1>
+        <SignOutButton>
+          <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded shadow">
+            🔒 Cerrar sesión
+          </button>
+        </SignOutButton>
+      </div>
+
+      <p className="text-gray-600 mb-6">
+        👤 Sesión iniciada como: <strong>{user.fullName} (Administrador)</strong>
+      </p>
 
       {/* Gestión de vuelos */}
       <div className="bg-white rounded shadow p-6 mb-8">
@@ -67,40 +82,13 @@ function Administrador() {
         <p className="mb-4">Agrega un nuevo vuelo a la base de datos:</p>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <input
-            name="numeroVuelo"
-            value={nuevoVuelo.numeroVuelo}
-            onChange={handleInputChange}
-            placeholder="Número de vuelo"
-            className="border p-2 rounded"
-          />
-          <input
-            name="origen"
-            value={nuevoVuelo.origen}
-            onChange={handleInputChange}
-            placeholder="Origen"
-            className="border p-2 rounded"
-          />
-          <input
-            name="destino"
-            value={nuevoVuelo.destino}
-            onChange={handleInputChange}
-            placeholder="Destino"
-            className="border p-2 rounded"
-          />
-          <input
-            name="fecha"
-            type="date"
-            value={nuevoVuelo.fecha}
-            onChange={handleInputChange}
-            className="border p-2 rounded"
-          />
+          <input name="numeroVuelo" value={nuevoVuelo.numeroVuelo} onChange={handleInputChange} placeholder="Número de vuelo" className="border p-2 rounded" />
+          <input name="origen" value={nuevoVuelo.origen} onChange={handleInputChange} placeholder="Origen" className="border p-2 rounded" />
+          <input name="destino" value={nuevoVuelo.destino} onChange={handleInputChange} placeholder="Destino" className="border p-2 rounded" />
+          <input name="fecha" type="date" value={nuevoVuelo.fecha} onChange={handleInputChange} className="border p-2 rounded" />
         </div>
 
-        <button
-          onClick={handleAgregarVuelo}
-          className="mt-4 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow"
-        >
+        <button onClick={handleAgregarVuelo} className="mt-4 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow">
           ➕ Agregar vuelo
         </button>
       </div>
