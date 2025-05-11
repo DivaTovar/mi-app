@@ -3,12 +3,16 @@ import { Routes, Route, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import axios from "axios";
 
+// Páginas
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import Vuelos from "./pages/Vuelos";
-import Administrador from "./pages/Administrador"; 
+import DetalleVuelo from "./pages/DetalleVuelo";
+import ReservaVuelo from "./pages/ReservaVuelo";
+import Administrador from "./pages/Administrador";
 import AuthRedirect from "./pages/AuthRedirect";
+import Contacto from "./pages/Contacto"; // ✅ Agregado
 
 const SUPABASE_URL = "https://mafrqpqovtomckdevjpf.supabase.co/rest/v1/usuarios";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // recortado por privacidad
@@ -41,7 +45,6 @@ function App() {
           console.error("❌ Error al registrar o actualizar en Supabase:", err)
         );
 
-      // Redirección automática a /admin si es admin
       if (user?.publicMetadata?.role === "admin") {
         navigate("/admin");
       }
@@ -54,8 +57,11 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<SignupPage />} />
       <Route path="/vuelos" element={<Vuelos />} />
+      <Route path="/vuelos/:id" element={<DetalleVuelo />} />
+      <Route path="/reservar/:id" element={<ReservaVuelo />} />
       <Route path="/admin" element={<Administrador />} />
       <Route path="/redirect" element={<AuthRedirect />} />
+      <Route path="/contacto" element={<Contacto />} /> {/* ✅ Ruta para la página de contacto */}
     </Routes>
   );
 }

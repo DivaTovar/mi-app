@@ -2,45 +2,93 @@ import { useState, useEffect } from "react";
 import { consultarOntologia } from "../utils/sparqlClient";
 
 function Vuelos() {
-  const [tipoViaje, setTipoViaje] = useState("idaVuelta");
   const [origen, setOrigen] = useState("");
   const [destino, setDestino] = useState("");
-  const [fechaIda, setFechaIda] = useState("");
-  const [fechaVuelta, setFechaVuelta] = useState("");
-  const [pasajeros, setPasajeros] = useState(1);
+  const [aerolinea, setAerolinea] = useState("");
   const [vuelos, setVuelos] = useState([]);
 
+  const obtenerVuelos = async () => {
+    try {
+      const resultados = await consultarOntologia(`
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX : <http://www.semanticweb.org/aeropuerto#>
+
+        SELECT ?vuelo ?nombreAerolinea ?ciudadOrigen ?ciudadDestino WHERE {
+          ?vuelo rdf:type :Vuelo .
+          ?vuelo :estadoVuelo "Programado" .
+          OPTIONAL {
+            ?aerolinea :operaVuelo ?vuelo .
+            ?aerolinea :nombreAerolinea ?nombreAerolinea .
+          }
+          OPTIONAL {
+            ?vuelo :tieneOrigen ?origenAero .
+            ?origenAero :ciudadAeropuerto ?ciudadOrigen .
+          }
+          OPTIONAL {
+            ?vuelo :tieneDestino ?destinoAero .
+            ?destinoAero :ciudadAeropuerto ?ciudadDestino .
+          }
+        } LIMIT 12
+      `);
+      setVuelos(resultados.results.bindings);
+    } catch (error) {
+      console.error("❌ Error al cargar vuelos:", error);
+    }
+  };
+
   useEffect(() => {
-    const obtenerVuelos = async () => {
-      try {
-        const resultados = await consultarOntologia(`
-          PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-          PREFIX : <http://www.semanticweb.org/aeropuerto#>
-          SELECT ?vuelo ?numeroVuelo ?nombreOrigen ?nombreDestino WHERE {
-            ?vuelo rdf:type :Vuelo .
-            OPTIONAL { ?vuelo :numeroVuelo ?numeroVuelo . }
-            OPTIONAL {
-              ?vuelo :tieneOrigen ?origen .
-              ?origen :nombreAeropuerto ?nombreOrigen .
-            }
-            OPTIONAL {
-              ?vuelo :tieneDestino ?destino .
-              ?destino :nombreAeropuerto ?nombreDestino .
-            }
-          } LIMIT 12
-        `);
-        setVuelos(resultados.results.bindings);
-        console.log("✅ Vuelos cargados:", resultados.results.bindings);
-      } catch (error) {
-        console.error("❌ Error al cargar vuelos:", error);
-      }
-    };
     obtenerVuelos();
   }, []);
 
+  const buscarVuelos = async () => {
+    const filtroOrigen = origen
+      ? `?vuelo :tieneOrigen ?origenAero .
+         ?origenAero :ciudadAeropuerto ?ciudadOrigen .
+         FILTER(CONTAINS(LCASE(STR(?ciudadOrigen)), LCASE("${origen}")))`
+      : `OPTIONAL { ?vuelo :tieneOrigen ?origenAero . ?origenAero :ciudadAeropuerto ?ciudadOrigen . }`;
+
+    const filtroDestino = destino
+      ? `?vuelo :tieneDestino ?destinoAero .
+         ?destinoAero :ciudadAeropuerto ?ciudadDestino .
+         FILTER(CONTAINS(LCASE(STR(?ciudadDestino)), LCASE("${destino}")))`
+      : `OPTIONAL { ?vuelo :tieneDestino ?destinoAero . ?destinoAero :ciudadAeropuerto ?ciudadDestino . }`;
+
+    const filtroAerolinea = aerolinea
+      ? `?aerolinea :operaVuelo ?vuelo .
+         ?aerolinea :nombreAerolinea ?nombreAerolinea .
+         FILTER(CONTAINS(LCASE(STR(?nombreAerolinea)), LCASE("${aerolinea}")))`
+      : `OPTIONAL { ?aerolinea :operaVuelo ?vuelo . ?aerolinea :nombreAerolinea ?nombreAerolinea . }`;
+
+    const query = `
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX : <http://www.semanticweb.org/aeropuerto#>
+
+      SELECT ?vuelo ?nombreAerolinea ?ciudadOrigen ?ciudadDestino WHERE {
+        ?vuelo rdf:type :Vuelo .
+        ?vuelo :estadoVuelo "Programado" .
+        ${filtroOrigen}
+        ${filtroDestino}
+        ${filtroAerolinea}
+      } LIMIT 30
+    `;
+
+    try {
+      const resultados = await consultarOntologia(query);
+      setVuelos(resultados.results.bindings);
+    } catch (error) {
+      console.error("❌ Error al buscar vuelos:", error);
+    }
+  };
+
+  const limpiarFormulario = () => {
+    setOrigen("");
+    setDestino("");
+    setAerolinea("");
+    obtenerVuelos();
+  };
+
   return (
     <div className="min-h-screen bg-blue-50 font-sans">
-      {/* Barra navegación */}
       <header className="border-b shadow-sm bg-blue-50 sticky top-0 z-50">
         <div className="max-w-screen-xl mx-auto flex justify-between items-center px-4 py-4">
           <a href="/">
@@ -54,116 +102,46 @@ function Vuelos() {
         </div>
       </header>
 
-      {/* Encabezado búsqueda */}
+      {/* FORMULARIO */}
       <section className="bg-blue-800 py-4 px-4">
         <div className="max-w-6xl mx-auto">
-          {/* Botones tipo de viaje */}
-          <div className="flex gap-4 justify-start mb-6">
-            {[{ key: "idaVuelta", label: "Ida y vuelta" }, { key: "soloIda", label: "Solo ida" }].map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setTipoViaje(key)}
-                className={`px-4 py-2 rounded-full border ${tipoViaje === key ? "bg-white text-blue-700 font-semibold" : "bg-blue-700 border-white text-white"}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Formulario búsqueda */}
           <div className="bg-white rounded-xl shadow-xl p-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="text-xs text-gray-500 font-semibold">ORIGEN</label>
-                <input
-                  type="text"
-                  placeholder="Ciudad de origen"
-                  value={origen}
-                  onChange={(e) => setOrigen(e.target.value)}
-                  className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
+                <input type="text" placeholder="Ciudad de origen" value={origen} onChange={(e) => setOrigen(e.target.value)} className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
               </div>
               <div>
                 <label className="text-xs text-gray-500 font-semibold">DESTINO</label>
-                <input
-                  type="text"
-                  placeholder="Ciudad de destino"
-                  value={destino}
-                  onChange={(e) => setDestino(e.target.value)}
-                  className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
+                <input type="text" placeholder="Ciudad de destino" value={destino} onChange={(e) => setDestino(e.target.value)} className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
               </div>
               <div>
-                <label className="text-xs text-gray-500 font-semibold">FECHA IDA</label>
-                <input
-                  type="date"
-                  value={fechaIda}
-                  onChange={(e) => setFechaIda(e.target.value)}
-                  className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 font-semibold">FECHA VUELTA</label>
-                <input
-                  type="date"
-                  value={fechaVuelta}
-                  onChange={(e) => setFechaVuelta(e.target.value)}
-                  disabled={tipoViaje !== "idaVuelta"}
-                  className={`w-full px-4 py-2 border rounded focus:outline-none ${tipoViaje === "idaVuelta" ? "focus:ring-2 focus:ring-blue-400" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 font-semibold">PASAJEROS</label>
-                <select
-                  value={pasajeros}
-                  onChange={(e) => setPasajeros(e.target.value)}
-                  className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <option key={n} value={n}>{n} pasajero{n > 1 ? "s" : ""}</option>
-                  ))}
-                </select>
+                <label className="text-xs text-gray-500 font-semibold">AEROLÍNEA</label>
+                <input type="text" placeholder="Nombre de la aerolínea" value={aerolinea} onChange={(e) => setAerolinea(e.target.value)} className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
               </div>
             </div>
-            <div className="mt-6 text-center">
-              <button className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3 rounded shadow-md">Buscar</button>
+
+            <div className="mt-6 flex justify-center gap-4">
+              <button onClick={buscarVuelos} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3 rounded shadow-md">Buscar</button>
+              <button onClick={limpiarFormulario} className="bg-gray-300 hover:bg-gray-200 text-gray-800 font-semibold px-6 py-3 rounded shadow">Limpiar</button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Tarjetas de vuelos */}
+      {/* TARJETAS */}
       <section className="max-w-6xl mx-auto px-4 py-12">
         <h2 className="text-2xl font-bold text-blue-700 mb-6">Vuelos encontrados</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {vuelos.map((v, index) => (
             <div key={index} className="bg-white rounded-xl shadow-md p-5 hover:shadow-lg transition">
-              <h3 className="text-sm text-gray-500 font-semibold mb-2">NÚMERO DE VUELO</h3>
-              <p className="text-lg font-bold text-blue-600 mb-1">{v.numeroVuelo?.value || "-"}</p>
-              <p className="text-sm text-gray-700">Partiendo desde: <span className="font-medium">{v.nombreOrigen?.value || "-"}</span></p>
-              <p className="text-sm text-gray-700 mb-4">Destino: <span className="font-medium">{v.nombreDestino?.value || "-"}</span></p>
-              <button className="text-white bg-blue-500 hover:bg-blue-600 text-sm px-4 py-2 rounded shadow">Ida y vuelta</button>
+              <h3 className="text-sm text-gray-500 font-semibold mb-2">AEROLÍNEA</h3>
+              <p className="text-lg font-bold text-blue-600 mb-1">{v.nombreAerolinea?.value || "-"}</p>
+              <p className="text-sm text-gray-700">Origen: <span className="font-medium">{v.ciudadOrigen?.value || "-"}</span></p>
+              <p className="text-sm text-gray-700 mb-4">Destino: <span className="font-medium">{v.ciudadDestino?.value || "-"}</span></p>
+              <a href={`/vuelos/${encodeURIComponent(v.vuelo?.value)}`} className="text-blue-600 hover:underline text-sm mt-2 block">Ver detalles</a>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* Promociones */}
-      <section className="max-w-6xl mx-auto py-16 px-4 grid md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
-          <h3 className="font-bold text-blue-600 text-lg mb-2">🌍 Vuelos internacionales</h3>
-          <p className="text-sm text-gray-600 mb-4">Hasta $300.000 COP de descuento en vuelos al exterior.</p>
-          <button className="text-blue-600 hover:underline font-medium text-sm">Ver más ofertas</button>
-        </div>
-        <div className="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
-          <h3 className="font-bold text-blue-600 text-lg mb-2">🏖️ Paquetes al Caribe</h3>
-          <p className="text-sm text-gray-600 mb-4">Hoteles y vuelos con hasta 40% de descuento.</p>
-          <button className="text-blue-600 hover:underline font-medium text-sm">Explorar paquetes</button>
-        </div>
-        <div className="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
-          <h3 className="font-bold text-blue-600 text-lg mb-2">✈️ Vuelos nacionales</h3>
-          <p className="text-sm text-gray-600 mb-4">Reserva vuelos a cualquier ciudad de Colombia.</p>
-          <button className="text-blue-600 hover:underline font-medium text-sm">Ver destinos</button>
         </div>
       </section>
     </div>
