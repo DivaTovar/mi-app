@@ -18,7 +18,7 @@ function Administrador() {
   const [vuelos, setVuelos] = useState([]);
   const [vueloEditando, setVueloEditando] = useState(null);
   const [vueloDetalleAbierto, setVueloDetalleAbierto] = useState(null);
-  const vuelosPorPagina = 12;
+  const vuelosPorPagina = 10;
 
   const [filtro, setFiltro] = useState({
     origen: "",
