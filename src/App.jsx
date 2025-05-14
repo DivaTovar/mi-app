@@ -10,7 +10,7 @@ import SignupPage from "./pages/SignupPage";
 import Vuelos from "./pages/Vuelos";
 import DetalleVuelo from "./pages/DetalleVuelo";
 import ReservaVuelo from "./pages/ReservaVuelo";
-import Administrador from "./pages/administrador";
+import Administrador from "./pages/Administrador";
 import AuthRedirect from "./pages/AuthRedirect";
 import Contacto from "./pages/Contacto";
 
