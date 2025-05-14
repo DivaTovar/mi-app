@@ -1,5 +1,8 @@
+import { URL_FUSEKI } from "../config/envs";
+
 export async function insertarEnOntologia(query) {
-  const endpoint = "http://localhost:3030/aeropuerto/update";
+  const endpoint = `${URL_FUSEKI}/aeropuerto/update`;
+
 
   console.log("📤 SPARQL insert:\n", query); // 👈 Ver el query enviado
 

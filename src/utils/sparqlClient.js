@@ -1,7 +1,8 @@
 // src/utils/sparqlClient.js
+import { URL_FUSEKI } from "../config/envs";
 
 export async function consultarOntologia(consulta) {
-  const endpoint = "http://localhost:3030/aeropuerto/sparql";
+  const endpoint = `${URL_FUSEKI}/aeropuerto/query`;
 
   const response = await fetch(endpoint, {
     method: "POST",

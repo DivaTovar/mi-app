@@ -15,10 +15,7 @@ import AuthRedirect from "./pages/AuthRedirect";
 import Contacto from "./pages/Contacto";
 
 import { consultarOntologia } from "./utils/sparqlClient";
-
-const SUPABASE_URL = "https://mafrqpqovtomckdevjpf.supabase.co/rest/v1/usuarios?select=id,nombre,correo";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hZnJxcHFvdnRvbWNrZGV2anBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNzU5MDEsImV4cCI6MjA2MTk1MTkwMX0.SE8h778-KCbUGZw3fkyV7a8wYcsWTx-sMyBamajg4Cs";
-
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config/envs";
 
 function App() {
   const { user, isSignedIn, isLoaded } = useUser();
