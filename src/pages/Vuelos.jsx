@@ -1,82 +1,24 @@
 import { useState, useEffect } from "react";
-import { consultarOntologia } from "../utils/sparqlClient";
 
-function Vuelos() {
+function Vuelos({ obtenerVuelosProgramados, buscarVuelosFiltrados }) {
   const [origen, setOrigen] = useState("");
   const [destino, setDestino] = useState("");
   const [aerolinea, setAerolinea] = useState("");
   const [vuelos, setVuelos] = useState([]);
 
-  const obtenerVuelos = async () => {
-    try {
-      const resultados = await consultarOntologia(`
-        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        PREFIX : <http://www.semanticweb.org/aeropuerto#>
-
-        SELECT ?vuelo ?nombreAerolinea ?ciudadOrigen ?ciudadDestino WHERE {
-          ?vuelo rdf:type :Vuelo .
-          ?vuelo :estadoVuelo "Programado" .
-          OPTIONAL {
-            ?aerolinea :operaVuelo ?vuelo .
-            ?aerolinea :nombreAerolinea ?nombreAerolinea .
-          }
-          OPTIONAL {
-            ?vuelo :tieneOrigen ?origenAero .
-            ?origenAero :ciudadAeropuerto ?ciudadOrigen .
-          }
-          OPTIONAL {
-            ?vuelo :tieneDestino ?destinoAero .
-            ?destinoAero :ciudadAeropuerto ?ciudadDestino .
-          }
-        } LIMIT 12
-      `);
-      setVuelos(resultados.results.bindings);
-    } catch (error) {
-      console.error("❌ Error al cargar vuelos:", error);
-    }
-  };
-
   useEffect(() => {
-    obtenerVuelos();
-  }, []);
+    if (obtenerVuelosProgramados) {
+      obtenerVuelosProgramados()
+        .then(setVuelos)
+        .catch((err) => console.error("❌ Error al cargar vuelos:", err));
+    }
+  }, [obtenerVuelosProgramados]);
 
-  const buscarVuelos = async () => {
-    const filtroOrigen = origen
-      ? `?vuelo :tieneOrigen ?origenAero .
-         ?origenAero :ciudadAeropuerto ?ciudadOrigen .
-         FILTER(CONTAINS(LCASE(STR(?ciudadOrigen)), LCASE("${origen}")))`
-      : `OPTIONAL { ?vuelo :tieneOrigen ?origenAero . ?origenAero :ciudadAeropuerto ?ciudadOrigen . }`;
-
-    const filtroDestino = destino
-      ? `?vuelo :tieneDestino ?destinoAero .
-         ?destinoAero :ciudadAeropuerto ?ciudadDestino .
-         FILTER(CONTAINS(LCASE(STR(?ciudadDestino)), LCASE("${destino}")))`
-      : `OPTIONAL { ?vuelo :tieneDestino ?destinoAero . ?destinoAero :ciudadAeropuerto ?ciudadDestino . }`;
-
-    const filtroAerolinea = aerolinea
-      ? `?aerolinea :operaVuelo ?vuelo .
-         ?aerolinea :nombreAerolinea ?nombreAerolinea .
-         FILTER(CONTAINS(LCASE(STR(?nombreAerolinea)), LCASE("${aerolinea}")))`
-      : `OPTIONAL { ?aerolinea :operaVuelo ?vuelo . ?aerolinea :nombreAerolinea ?nombreAerolinea . }`;
-
-    const query = `
-      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-      PREFIX : <http://www.semanticweb.org/aeropuerto#>
-
-      SELECT ?vuelo ?nombreAerolinea ?ciudadOrigen ?ciudadDestino WHERE {
-        ?vuelo rdf:type :Vuelo .
-        ?vuelo :estadoVuelo "Programado" .
-        ${filtroOrigen}
-        ${filtroDestino}
-        ${filtroAerolinea}
-      } LIMIT 30
-    `;
-
-    try {
-      const resultados = await consultarOntologia(query);
-      setVuelos(resultados.results.bindings);
-    } catch (error) {
-      console.error("❌ Error al buscar vuelos:", error);
+  const buscarVuelos = () => {
+    if (buscarVuelosFiltrados) {
+      buscarVuelosFiltrados(origen, destino, aerolinea)
+        .then(setVuelos)
+        .catch((err) => console.error("❌ Error al buscar vuelos:", err));
     }
   };
 
@@ -84,7 +26,9 @@ function Vuelos() {
     setOrigen("");
     setDestino("");
     setAerolinea("");
-    obtenerVuelos();
+    if (obtenerVuelosProgramados) {
+      obtenerVuelosProgramados().then(setVuelos);
+    }
   };
 
   return (

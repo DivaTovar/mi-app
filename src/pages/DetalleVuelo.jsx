@@ -1,57 +1,18 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { consultarOntologia } from "../utils/sparqlClient";
 
-function DetalleVuelo() {
+function DetalleVuelo({ obtenerDetalleVuelo }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [vuelo, setVuelo] = useState(null);
 
   useEffect(() => {
-    const obtenerDetalle = async () => {
-      try {
-        const resultado = await consultarOntologia(`
-          PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-          PREFIX : <http://www.semanticweb.org/aeropuerto#>
-
-          SELECT ?numero ?origen ?destino ?nombreAerolinea ?puerta ?estado ?horaSalida ?horaLlegada WHERE {
-            BIND(<${decodeURIComponent(id)}> AS ?vuelo)
-
-            OPTIONAL { ?vuelo :numeroVuelo ?numero . }
-
-            OPTIONAL {
-              ?vuelo :tieneOrigen ?ori .
-              ?ori :ciudadAeropuerto ?origen .
-            }
-
-            OPTIONAL {
-              ?vuelo :tieneDestino ?dest .
-              ?dest :ciudadAeropuerto ?destino .
-            }
-
-            OPTIONAL {
-              ?aerolinea :operaVuelo ?vuelo .
-              ?aerolinea :nombreAerolinea ?nombreAerolinea .
-            }
-
-            OPTIONAL {
-              ?vuelo :asignadoAPuerta ?puertaObj .
-              ?puertaObj :identificadorPuerta ?puerta .
-            }
-
-            OPTIONAL { ?vuelo :estadoVuelo ?estado . }
-            OPTIONAL { ?vuelo :horaSalidaVuelo ?horaSalida . }
-            OPTIONAL { ?vuelo :horaLlegadaVuelo ?horaLlegada . }
-          } LIMIT 1
-        `);
-        setVuelo(resultado.results.bindings[0]);
-      } catch (error) {
-        console.error("❌ Error al obtener detalle del vuelo:", error);
-      }
-    };
-
-    obtenerDetalle();
-  }, [id]);
+    if (obtenerDetalleVuelo) {
+      obtenerDetalleVuelo(id)
+        .then(setVuelo)
+        .catch((error) => console.error("❌ Error al obtener detalle del vuelo:", error));
+    }
+  }, [id, obtenerDetalleVuelo]);
 
   if (!vuelo) {
     return <div className="p-8 text-center text-gray-500">Cargando datos del vuelo...</div>;
@@ -59,7 +20,6 @@ function DetalleVuelo() {
 
   return (
     <div className="max-w-4xl mx-auto py-10 px-6 bg-white rounded-xl shadow-md mt-10">
-      {/* Imagen banner superior */}
       <img
         src="/banner.png"
         alt="Banner de vuelo"
@@ -88,7 +48,6 @@ function DetalleVuelo() {
         </div>
       </div>
 
-      {/* Botón de acción */}
       <div className="mt-8 flex gap-4 flex-wrap">
         <button
           onClick={() => navigate(`/reservar/${encodeURIComponent(id)}`)}
@@ -104,7 +63,6 @@ function DetalleVuelo() {
         </a>
       </div>
 
-      {/* Vuelos sugeridos */}
       <div className="mt-12 border-t pt-6">
         <h3 className="text-lg font-bold text-blue-600 mb-3">🌐 Vuelos similares sugeridos</h3>
         <ul className="list-disc list-inside text-sm text-gray-700">

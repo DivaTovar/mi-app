@@ -1,9 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { insertarEnOntologia } from "../utils/sparqlInsert";
 
-function ReservaVuelo() {
-  const { id } = useParams(); // URI del vuelo
+function ReservaVuelo({ registrarReserva }) {
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const [nombre, setNombre] = useState("");
@@ -12,30 +11,18 @@ function ReservaVuelo() {
   const [nacionalidad, setNacionalidad] = useState("Colombiano");
   const [mensaje, setMensaje] = useState("");
 
-  const generarIDPasajero = () => `Pasajero_${Date.now()}`;
-  const vueloURI = `<${decodeURIComponent(id)}>`;
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const idPasajero = generarIDPasajero();
-    const pasajeroURI = `:${idPasajero}`;
-
-    const query = `
-      PREFIX : <http://www.semanticweb.org/aeropuerto#>
-      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-      INSERT DATA {
-        ${pasajeroURI} rdf:type :Pasajero ;
-          :idPasajero "${idPasajero}" ;
-          :nombrePasajero "${nombre}" ;
-          :tipoDocumentoPasajero "${tipoDocumento}" ;
-          :numeroDocumentoPasajero "${numeroDocumento}" ;
-          :nacionalidadPasajero "${nacionalidad}" ;
-          :abordaVuelo ${vueloURI} .
-      }
-    `;
 
     try {
-      await insertarEnOntologia(query);
+      await registrarReserva({
+        nombre,
+        tipoDocumento,
+        numeroDocumento,
+        nacionalidad,
+        vueloId: id
+      });
+
       setMensaje("✅ Reserva registrada con éxito");
       setTimeout(() => navigate("/vuelos"), 2000);
     } catch (err) {
@@ -46,8 +33,6 @@ function ReservaVuelo() {
 
   return (
     <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg">
-
-      {/* Logo que redirige al Home */}
       <div className="flex justify-center mb-6 cursor-pointer" onClick={() => navigate("/")}>
         <img src="/Logo_IMG.png" alt="Logo" className="h-24 w-auto hover:scale-105 transition-transform" />
       </div>
@@ -56,8 +41,6 @@ function ReservaVuelo() {
       <p className="text-center text-gray-600 mb-8">Completa los siguientes datos para continuar con tu reserva.</p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-
-        {/* Nombre */}
         <div>
           <label className="text-sm font-semibold flex items-center gap-1">✍️ NOMBRES</label>
           <input
@@ -70,7 +53,6 @@ function ReservaVuelo() {
           />
         </div>
 
-        {/* Nacionalidad */}
         <div>
           <label className="text-sm font-semibold flex items-center gap-1">🌎 NACIONALIDAD</label>
           <select
@@ -86,7 +68,6 @@ function ReservaVuelo() {
           </select>
         </div>
 
-        {/* Tipo de documento y número */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="text-sm font-semibold flex items-center gap-1">🪪 TIPO DE DOCUMENTO</label>
@@ -113,7 +94,6 @@ function ReservaVuelo() {
           </div>
         </div>
 
-        {/* Botón de enviar */}
         <button
           type="submit"
           className="w-full bg-blue-600 text-white font-semibold py-3 rounded hover:bg-blue-700 transition-colors"
